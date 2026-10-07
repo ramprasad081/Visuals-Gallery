@@ -1,6 +1,6 @@
 import { Bookmark, Plus, Download } from "lucide-react";
 
-const ImageCard = ({ src }) => {
+const ImageCard = ({ src }: { src: string }) => {
   return (
     <div className="relative group mb-4 break-inside-avoid">
       <img src={src} className="w-full rounded-xl" />
