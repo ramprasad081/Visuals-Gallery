@@ -122,7 +122,7 @@
 
 // export default App
 
-import { Home, Image, Pencil, Compass as CompassIcon, Folder, Download, Bookmark, User, Languages, Menu, Search, ScanSearch, Sparkles, Flame, ArrowRight, TrendingUp, Plus, Globe, Lock, Check } from "lucide-react";
+import { Home, Image, Pencil, Compass as CompassIcon, Folder, Download, Bookmark, User, Languages, Menu, Search, ScanSearch, Sparkles, Flame, ArrowRight, TrendingUp, Plus, Globe, Lock, Check, X } from "lucide-react";
 import { useState } from "react";
 import ImageCard from "./ImageCard";
 import Compass from "./Compass";
@@ -137,6 +137,7 @@ import StreetPhotography from "./StreetPhotography";
 import Experimental from "./Experimental";
 import Travel from "./Travel";
 import People from "./People";
+import { searchVisuals, searchI18n } from "./searchCatalog";
 
 const translations: Record<string, {
   searchPlaceholder: string;
@@ -804,7 +805,138 @@ const App = () => {
   const [activeIcon, setActiveIcon] = useState("home");
   const [activeTab, setActiveTab] = useState("featured");
   const [language, setLanguage] = useState("en");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilter, setSearchFilter] = useState<"all" | "photo" | "vector">("all");
   const t = translations[language] || translations.en;
+  const searchInfo = searchI18n[language] || searchI18n.en;
+  const searchResults = searchVisuals(searchQuery, searchFilter);
+  const totalMatchingAll = searchVisuals(searchQuery, "all");
+  const photoCount = totalMatchingAll.filter((x) => x.type === "photo").length;
+  const vectorCount = totalMatchingAll.filter((x) => x.type === "vector").length;
+
+  const suggestedTags = [
+    "Nature",
+    "Wallpapers",
+    "3D Renders",
+    "Architecture",
+    "Travel",
+    "Animals",
+    "Vectors",
+    "Street",
+    "Textures",
+    "People",
+    "Fall",
+  ];
+
+  const renderSearchResults = () => (
+    <div className="space-y-6 mt-6 max-w-6xl">
+      {/* Search Header & Filter Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+            <button
+              onClick={() => setSearchQuery("")}
+              className="hover:text-black font-semibold underline cursor-pointer"
+            >
+              ← {searchInfo.clear}
+            </button>
+            <span>•</span>
+            <span className="font-medium text-gray-600">{searchInfo.searchResults}</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+            "{searchQuery}"
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            {searchResults.length} {searchInfo.foundVisuals}
+          </p>
+        </div>
+
+        {/* Filter Pills: All / Photos / Vectors */}
+        <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-full self-start sm:self-auto">
+          <button
+            onClick={() => setSearchFilter("all")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+              searchFilter === "all" ? "bg-white text-black shadow-sm" : "text-gray-600 hover:text-black"
+            }`}
+          >
+            {searchInfo.all} ({totalMatchingAll.length})
+          </button>
+          <button
+            onClick={() => setSearchFilter("photo")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+              searchFilter === "photo" ? "bg-white text-black shadow-sm" : "text-gray-600 hover:text-black"
+            }`}
+          >
+            {searchInfo.photos} ({photoCount})
+          </button>
+          <button
+            onClick={() => setSearchFilter("vector")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+              searchFilter === "vector" ? "bg-white text-black shadow-sm" : "text-gray-600 hover:text-black"
+            }`}
+          >
+            {searchInfo.vectors} ({vectorCount})
+          </button>
+        </div>
+      </div>
+
+      {/* Suggested Tags */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <span className="text-gray-400 font-medium whitespace-nowrap">{searchInfo.suggestions}</span>
+        {suggestedTags.map((tag) => (
+          <button
+            key={tag}
+            onClick={() => setSearchQuery(tag)}
+            className={`px-3 py-1 rounded-full border transition cursor-pointer whitespace-nowrap ${
+              searchQuery.toLowerCase() === tag.toLowerCase()
+                ? "bg-black text-white border-black font-semibold"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+            }`}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      {/* Results Grid or Empty State */}
+      {searchResults.length > 0 ? (
+        <div className="columns-3 gap-4 mt-6">
+          {searchResults.map((item) => (
+            <ImageCard key={item.id} src={item.src} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 px-4 bg-gray-50 rounded-3xl border border-gray-200 mt-6">
+          <div className="w-14 h-14 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+            <Search size={28} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">
+            {searchInfo.noResults} "{searchQuery}"
+          </h3>
+          <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+            {searchInfo.tryDifferent}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
+            {["Nature", "Wallpapers", "3D Renders", "Architecture", "Travel", "Animals", "Vectors", "Textures"].map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSearchQuery(tag)}
+                className="px-4 py-1.5 bg-white border border-gray-300 hover:border-black rounded-full text-xs font-medium text-gray-700 transition cursor-pointer"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSearchQuery("")}
+            className="mt-6 px-6 py-2.5 bg-black text-white rounded-full text-sm font-semibold hover:bg-gray-800 transition cursor-pointer"
+          >
+            {searchInfo.clear}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   const imageList = [
     "https://images.unsplash.com/photo-1779896411979-35844de55d13?w=600&auto=format&fit=crop&q=60",
@@ -1097,6 +1229,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("home");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <Home size={28} />
@@ -1107,6 +1240,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("image");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <Image size={28} />
@@ -1117,6 +1251,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("pencil");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <Pencil size={28} />
@@ -1129,6 +1264,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("compass");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <CompassIcon size={28} />
@@ -1138,6 +1274,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("folder");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <Folder size={28} />
@@ -1147,6 +1284,7 @@ const App = () => {
             onClick={() => {
               setActiveIcon("download");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
           >
             <Download size={28} />
@@ -1158,6 +1296,7 @@ const App = () => {
           onClick={() => {
             setActiveIcon("bookmark");
             setActiveTab("featured");
+            setSearchQuery("");
           }}
         >
           <Bookmark size={28} />
@@ -1168,8 +1307,8 @@ const App = () => {
             onClick={() => {
               setActiveIcon("login");
               setActiveTab("featured");
+              setSearchQuery("");
             }}
-
           >
             <User size={28} />
           </div>
@@ -1199,13 +1338,28 @@ const App = () => {
           />
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSearchQuery("");
+            }}
             placeholder={t.searchPlaceholder}
-            className="w-full rounded-full bg-gray-100 border-0 py-3 pl-10 pr-4 outline-none focus:outline-none focus:ring-0"
-
+            className="w-full rounded-full bg-gray-100 border-0 py-3 pl-10 pr-12 outline-none focus:outline-none focus:ring-0"
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-600 cursor-pointer">
-            <ScanSearch size={18} />
-          </div>
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black p-1 cursor-pointer transition"
+              title={searchInfo.clear}
+            >
+              <X size={18} />
+            </button>
+          ) : (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-600 cursor-pointer">
+              <ScanSearch size={18} />
+            </div>
+          )}
         </div>
         <div className="flex gap-3 overflow-x-auto whitespace-nowrap mt-4 items-start">
           <button
@@ -1410,11 +1564,27 @@ const App = () => {
                     <input
                       type="text"
                       placeholder={t.searchPlaceholder}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setSearchQuery("");
+                      }}
                       className="w-full rounded-full bg-gray-100 py-3 pl-11 pr-12 outline-none"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-600 cursor-pointer">
-                      <ScanSearch size={18} />
-                    </div>
+                    {searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black p-1 cursor-pointer transition"
+                        title={searchInfo.clear}
+                      >
+                        <X size={18} />
+                      </button>
+                    ) : (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-600 cursor-pointer">
+                        <ScanSearch size={18} />
+                      </div>
+                    )}
                   </div>
 
                   {activeIcon === "home" && (
@@ -1423,16 +1593,16 @@ const App = () => {
                         <TrendingUp size={16} /> {t.trending}
                       </span>
                       {[
-                        { label: t.nature, tab: "nature" },
-                        { label: t.wallpapers, tab: "wallpapers" },
-                        { label: t.travel, tab: "travel" },
-                        { label: t.renders, tab: "render" },
-                        { label: t.architecture, tab: "architecture" },
-                        { label: t.street, tab: "street" },
+                        { label: t.nature, search: "Nature" },
+                        { label: t.wallpapers, search: "Wallpapers" },
+                        { label: t.travel, search: "Travel" },
+                        { label: t.renders, search: "3D Renders" },
+                        { label: t.architecture, search: "Architecture" },
+                        { label: t.street, search: "Street" },
                       ].map((item) => (
                         <button
-                          key={item.tab}
-                          onClick={() => setActiveTab(item.tab)}
+                          key={item.search}
+                          onClick={() => setSearchQuery(item.search)}
                           className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs font-medium transition cursor-pointer"
                         >
                           {item.label}
@@ -1499,6 +1669,7 @@ const App = () => {
           )}
 
         {activeIcon === "home" && activeTab === "featured" && (
+          searchQuery.trim() !== "" ? renderSearchResults() : (
           <div className="space-y-12 mt-6 max-w-6xl">
             {/* Spotlight Banner / Photo of the Day */}
             <div className="relative rounded-3xl overflow-hidden shadow-lg h-80 group">
@@ -1621,83 +1792,109 @@ const App = () => {
               </div>
             </div>
           </div>
+          )
         )}
 
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {searchQuery.trim() !== "" &&
+          activeTab !== "featured" &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil" ||
+            activeIcon === "compass" ||
+            activeIcon === "folder" ||
+            activeIcon === "download" ||
+            activeIcon === "bookmark") &&
+          renderSearchResults()}
+
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "fall" && <NewFall />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "wallpapers" && <Wallpapers />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "render" && <ThreeDRender />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "nature" && <Nature />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "textures" && <Textures />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "film" && <Film />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "architecture" && <Architecture />}
 
-
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "street" && <StreetPhotography />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "experimental" && <Experimental />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "travel" && <Travel />}
 
-        {(activeIcon === "home" ||
-          activeIcon === "image" ||
-          activeIcon === "pencil") &&
+        {!searchQuery.trim() &&
+          (activeIcon === "home" ||
+            activeIcon === "image" ||
+            activeIcon === "pencil") &&
           activeTab === "people" && <People />}
 
-        {activeIcon === "compass" && <Compass />}
+        {!searchQuery.trim() && activeIcon === "compass" && <Compass />}
 
-        {activeIcon === "image" && (
-          <div className="columns-3 gap-4 mt-6">
-            {imageList.map((img, index) => (
-              <ImageCard key={index} src={img} />
-            ))}
-          </div>
+        {activeIcon === "image" && activeTab === "featured" && (
+          searchQuery.trim() !== "" ? renderSearchResults() : (
+            <div className="columns-3 gap-4 mt-6">
+              {imageList.map((img, index) => (
+                <ImageCard key={index} src={img} />
+              ))}
+            </div>
+          )
         )}
-        {activeIcon === "pencil" && (
-          <div className="columns-3 gap-4 mt-6">
-            {pencilList.map((img, index) => (
-              <ImageCard key={index} src={img} />
-            ))}
-          </div>
+        {activeIcon === "pencil" && activeTab === "featured" && (
+          searchQuery.trim() !== "" ? renderSearchResults() : (
+            <div className="columns-3 gap-4 mt-6">
+              {pencilList.map((img, index) => (
+                <ImageCard key={index} src={img} />
+              ))}
+            </div>
+          )
         )}
 
-        {activeIcon === "folder" && (
+        {!searchQuery.trim() && activeIcon === "folder" && (
           <div className="px-6 py-6 space-y-8 max-w-6xl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-6">
@@ -1772,7 +1969,7 @@ const App = () => {
           </div>
         )}
 
-        {activeIcon === "download" && (
+        {!searchQuery.trim() && activeIcon === "download" && (
           <div className="px-6 py-6 space-y-8 max-w-6xl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-6">
@@ -1854,7 +2051,7 @@ const App = () => {
           </div>
         )}
 
-        {activeIcon === "bookmark" && (
+        {!searchQuery.trim() && activeIcon === "bookmark" && (
           <div className="px-6 py-6 space-y-8 max-w-6xl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-6">
